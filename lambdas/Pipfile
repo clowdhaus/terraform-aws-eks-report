@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+
+[dev-packages]
+boto3 = "*"
+black = "*"
+flake8 = "*"
+isort = "*"
+pyflakes = "*"
+
+[requires]
+python_version = "3.9"
+
+[scripts]
+lint = "python3 -m flake8 . --count --statistics --benchmark --exit-zero --config=.flake8"
+imports = "python3 -m isort ."
+format = "python3 -m black ."
