@@ -3,7 +3,6 @@ line-length = 120
 target-version = ['py39']
 include = '\.pyi?$'
 skip-string-normalization = true
-verbose = true
 exclude = '''
 /(
   \.mypy_cache

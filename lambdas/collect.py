@@ -7,8 +7,8 @@ from typing import Dict, List
 import boto3
 import botocore
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logger = logging.getLogger().setLevel(level=LOGLEVEL)
 
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html#kubernetes-release-calendar
 # If an exact date is not posted yet, we use the 1st day of the month
@@ -20,13 +20,8 @@ SUPPORTED_VERSIONS = {
     25: (2024, 5, 1),
 }
 
-# Notify if EOS is within this many days
-EOS_WITHIN_DAYS = os.environ.get('EOS_WITHIN_DAYS', 90)
-TO_EMAIL_ADDRESSES = os.environ.get('TO_EMAIL_ADDRESSES', '')
-FROM_EMAIL_ADDRESS = os.environ.get('FROM_EMAIL_ADDRESS', '')
+# ARNs to assume roles across accounts to collect cluster details
 LAMBDA_ASSUME_ROLE_ARNS = os.environ.get('LAMBDA_ASSUME_ROLE_ARNS', '')
-SES_TEMPLATE_NAME = os.environ.get('SES_TEMPLATE_NAME')
-SES_TEMPLATE_ARN = os.environ.get('SES_TEMPLATE_ARN')
 
 STS_CLIENT = boto3.client('sts')
 
@@ -35,7 +30,9 @@ def _assume_role_session(role_arn: str, role_session_name: str, **kwargs) -> bot
     """
     Create session for use with boto3 clients using an assumed role's credentials.
 
-    :returns: boto3 session
+    :param role_arn: ARN of role to assume
+    :param role_session_name: name of session used when assuming the role
+    :returns: boto3 assumed role session
     """
     response = STS_CLIENT.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name, **kwargs)
     credentials = response['Credentials']
@@ -47,7 +44,14 @@ def _assume_role_session(role_arn: str, role_session_name: str, **kwargs) -> bot
     )
 
 
-def _paginate_clusters(eks_client: boto3.client) -> List[str]:
+def _paginate_clusters(eks_client: boto3.client, region: str) -> List[str]:
+    """
+    Paginate through all clusters in the current account (current being tied to the client).
+
+    :param eks_client: boto3 EKS client
+    :param region: AWS region; used for logging if error occurs
+    :returns: list of cluster names
+    """
     paginator = eks_client.get_paginator('list_clusters')
     clusters = []
 
@@ -56,7 +60,8 @@ def _paginate_clusters(eks_client: boto3.client) -> List[str]:
             clusters.extend(page['clusters'])
     except botocore.exceptions.ClientError as error:
         if error.response['Error']['Code'] == 'AccessDeniedException':
-            pass  # Access denied due to explicit deny policy on `eks:ListClusters`
+            # TODO - add account ID to log message
+            logger.warn(f'Access denied to list clusters in {region} account')
         else:
             raise error
 
@@ -64,13 +69,20 @@ def _paginate_clusters(eks_client: boto3.client) -> List[str]:
 
 
 def list_clusters(event: str, context: Dict) -> List[Dict]:
-    logger.info(json.dumps({"[INPUT]": event}))
+    """
+    List clusters in the current account and across other accounts if provided.
+
+    :param event: AWS Lambda event that contains the region name to list clusters within
+    :param context: (unused) AWS Lambda context
+    :returns: list of cluster details (region, cluster name, and optional assume role ARN if used)
+    """
+    logger.info(json.dumps({'[INPUT]': event}))
     region = event.get('RegionName')
     cluster_details = []
 
     # List clusters in the current account with Lambda role
     eks_client = boto3.client('eks', region_name=region)
-    clusters = _paginate_clusters(eks_client)
+    clusters = _paginate_clusters(eks_client, region)
     cluster_details.extend(
         map(
             lambda cluster: {
@@ -86,7 +98,7 @@ def list_clusters(event: str, context: Dict) -> List[Dict]:
         for lambda_assume_role_arn in LAMBDA_ASSUME_ROLE_ARNS.split(';'):
             eks_session = _assume_role_session(lambda_assume_role_arn, 'EksReport-ListClusters')
             eks_client = eks_session.client('eks', region_name=region)
-            clusters = _paginate_clusters(eks_client)
+            clusters = _paginate_clusters(eks_client, region)
             cluster_details.extend(
                 map(
                     lambda cluster: {
@@ -97,20 +109,33 @@ def list_clusters(event: str, context: Dict) -> List[Dict]:
                     clusters,
                 )
             )
-    results = {"Clusters": cluster_details}
-    logger.info(json.dumps({"[OUTPUT]": results}))
+    results = {'Clusters': cluster_details}
+    logger.info(json.dumps({'[OUTPUT]': results}))
 
     return cluster_details
 
 
-def version_is_supported(version: str) -> bool:
+def _version_is_supported(version: str) -> bool:
+    """
+    Check if the given version is supported by Amazon EKS using static list of supported versions.
+
+    :param version: Kubernetes version to check
+    :returns: True if version is supported, False otherwise
+    """
     minor = int(version.split('.')[1])
     return minor >= min(SUPPORTED_VERSIONS.keys())
 
 
-def days_till_end_of_support(version: str) -> int:
+def _days_till_end_of_support(version: str) -> int:
+    """
+    Calculate the number of days until the end of support for the given version.
+        If version is no longer supported, return -1
+
+    :param version: Kubernetes version to check
+    :returns: number of days until end of support, -1 if version is no longer supported
+    """
     minor = int(version.split('.')[1])
-    if not version_is_supported(version):
+    if not _version_is_supported(version):
         return -1
 
     eos = date(*SUPPORTED_VERSIONS.get(minor))
@@ -120,9 +145,14 @@ def days_till_end_of_support(version: str) -> int:
 
 def describe_cluster(event: Dict, context: Dict) -> List[Dict]:
     """
-    Describe an EKS cluster. This is singular since we are using Step Functions map state to parallelize.
+    Describe an EKS cluster to collect details on the cluster.
+        This is singular since we are using Step Functions map state to parallelize.
+
+    :param event: AWS Lambda event that contains the cluster name and region to describe, and optional assume role ARN
+    :param context: (unused) AWS Lambda context
+    :returns: list of cluster details
     """
-    logger.info(json.dumps({"[INPUT]": event}))
+    logger.info(json.dumps({'[INPUT]': event}))
 
     lambda_assume_role_arn = event.get('lambda_assume_role_arn', None)
     region = event['region']
@@ -134,7 +164,7 @@ def describe_cluster(event: Dict, context: Dict) -> List[Dict]:
         eks_client = eks_session.client('eks', region_name=region)
 
     response = eks_client.describe_cluster(name=cluster)
-    logger.info(json.dumps({"[DESCRIBE CLUSTER]": response}, default=str))
+    logger.info(json.dumps({'[DESCRIBE CLUSTER]': response}, default=str))
     cluster = response['cluster']
     (_, _, _, region, account_id, _) = cluster['arn'].split(':')
 
@@ -143,59 +173,9 @@ def describe_cluster(event: Dict, context: Dict) -> List[Dict]:
         'region': region,
         'account_id': account_id,
         'version': cluster['version'],
-        'supported_version': version_is_supported(cluster['version']),
-        'days_till_eos': days_till_end_of_support(cluster['version']),
+        'supported_version': _version_is_supported(cluster['version']),
+        'days_till_eos': _days_till_end_of_support(cluster['version']),
     }
 
-    logger.info(json.dumps({"[OUTPUT]": result}))
+    logger.info(json.dumps({'[OUTPUT]': result}))
     return result
-
-
-def sort_clusters(clusters: Dict) -> List[Dict]:
-    return sorted(clusters, key=lambda x: (x['account_id'], x['region'], x['version']))
-
-
-def send_email(results: Dict, email_addresses: List[str]) -> None:
-    ses_client = boto3.client('sesv2')
-    ses_client.send_email(
-        Destination={'ToAddresses': email_addresses},
-        FromEmailAddress=FROM_EMAIL_ADDRESS,
-        Content={
-            'Template': {
-                'TemplateName': SES_TEMPLATE_NAME,
-                'TemplateArn': SES_TEMPLATE_ARN,
-                'TemplateData': json.dumps(
-                    {
-                        'eos_within_days': EOS_WITHIN_DAYS,
-                        'clusters_reached_eos': results.get('reached_eos', []),
-                        'clusters_near_eos': results.get('nearing_eos', []),
-                    }
-                ),
-            }
-        },
-    )
-
-
-def notify(event: List[Dict], context: Dict) -> None:
-    logger.info(json.dumps({"[INPUT]": event}))
-
-    # TODO - report when version of solution is not up to date (i.e. - new module published which
-    # has been updated for new EKS versions and their end of support dates)
-    # TODO - send to SNS topic(s)
-    flattened = [item for sublist in event for item in sublist]
-    logger.info(json.dumps({"[FLATTENED]": flattened}))
-
-    # Filter and segment
-    eos_clusters = filter(lambda cluster: not cluster['supported_version'], flattened)
-    clusters = filter(
-        lambda cluster: int(cluster.get('days_till_eos', 0)) <= int(EOS_WITHIN_DAYS) and cluster['supported_version'],
-        flattened,
-    )
-    results = {
-        'reached_eos': sort_clusters(eos_clusters),
-        'nearing_eos': sort_clusters(clusters),
-    }
-    logger.info(json.dumps({"[OUTPUT]": results}))
-
-    if flattened and TO_EMAIL_ADDRESSES:
-        send_email(results, TO_EMAIL_ADDRESSES.split(';'))

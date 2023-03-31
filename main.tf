@@ -149,11 +149,11 @@ module "list_lambda" {
   function_name = coalesce(var.list_lambda_name, "${var.name}-list")
   description   = coalesce(var.list_lambda_description, "List EKS clusters")
 
-  handler     = "lambdas.list_clusters"
+  handler     = "collect.list_clusters"
   runtime     = var.lambda_runtime
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory
-  source_path = "${path.module}/lambdas/lambdas.py"
+  source_path = "${path.module}/lambdas/collect.py"
   layers      = var.lambda_layers
 
   environment_variables = merge(
@@ -205,11 +205,11 @@ module "describe_lambda" {
   function_name = coalesce(var.describe_lambda_name, "${var.name}-describe")
   description   = coalesce(var.describe_lambda_description, "Describe EKS clusters to collect data")
 
-  handler     = "lambdas.describe_cluster"
+  handler     = "collect.describe_cluster"
   runtime     = var.lambda_runtime
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory
-  source_path = "${path.module}/lambdas/lambdas.py"
+  source_path = "${path.module}/lambdas/collect.py"
   layers      = var.lambda_layers
 
   environment_variables = merge(
@@ -240,11 +240,11 @@ module "notify_lambda" {
   function_name = coalesce(var.notify_lambda_name, "${var.name}-notify")
   description   = coalesce(var.notify_lambda_description, "Generate and send EKS notification(s)")
 
-  handler     = "lambdas.notify"
+  handler     = "report.notify"
   runtime     = var.lambda_runtime
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory
-  source_path = "${path.module}/lambdas/lambdas.py"
+  source_path = "${path.module}/lambdas/report.py"
   layers      = var.lambda_layers
 
   environment_variables = merge(

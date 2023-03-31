@@ -26,10 +26,10 @@ module "eks_report" {
 }
 ```
 
-## Step Function Graph
+### Example Email Report
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/clowdhaus/terraform-aws-eks-report/main/.github/images/stepfunctions_graph.svg" alt="Step Function Graph" width="40%">
+  <img src="https://raw.githubusercontent.com/clowdhaus/terraform-aws-eks-report/main/.github/images/email.png" alt="Sample email report" width="80%">
 </p>
 
 ## Examples
