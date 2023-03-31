@@ -21,6 +21,7 @@ variable "log_group_retention_in_days" {
   type        = number
   default     = 30
 }
+
 ################################################################################
 # Event Bridge Rule
 ################################################################################
@@ -163,4 +164,32 @@ variable "from_email_address" {
   description = "The email address to send the report from. Required if supplying values for `to_email_addresses`"
   type        = string
   default     = null
+}
+
+################################################################################
+# SES Template
+################################################################################
+
+variable "create_ses_template" {
+  description = "Controls if the SES Template should be created"
+  type        = bool
+  default     = true
+}
+
+variable "ses_template_arn" {
+  description = "The ARN of an existing SES Template"
+  type        = string
+  default     = null
+}
+
+variable "ses_template_name" {
+  description = "The name of the SES Template"
+  type        = string
+  default     = "EKS-Report"
+}
+
+variable "ses_template_subject" {
+  description = "The subject of the SES Template"
+  type        = string
+  default     = "Amazon EKS Report"
 }

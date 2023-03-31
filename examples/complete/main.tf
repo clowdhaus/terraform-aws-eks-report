@@ -35,8 +35,8 @@ module "eks_report" {
 
   # event_schedule_expression = "cron(0/5 * * * ? *)"
 
-  to_email_addresses = ["bryantbiggs@gmail.com"]
-  from_email_address = "bryantbiggs@gmail.com"
+  to_email_addresses = [var.email_address]
+  from_email_address = var.email_address
 
   notify_eos_within_days = 180
 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>EKS Report</title>
+  <style>
+    body {
+      font-family: arial, sans-serif;
+      font-size: 0.9em;
+    }
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.5em;
+    }
+    th {
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Amazon EKS Report</h1>
+
+    <p>Please refer to the following resources to aid in upgrading your cluster(s):</p>
+    <ul>
+      <li><a
+          href="https://docs.aws.amazon.com/eks/latest/userguide/update-cluster.html">Updating
+          an Amazon EKS cluster Kubernetes version</a></li>
+      <li><a
+          href="https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html">Amazon
+          EKS Kubernetes versions</a></li>
+      <li><a
+          href="https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html#kubernetes-release-calendar">Amazon
+          EKS Kubernetes release calendar and FAQ</a></li>
+      <li><a
+          href="https://kubernetes.io/docs/reference/using-api/deprecation-guide/">Kubernetes
+          Deprecated API Migration Guide</a></li>
+    </ul>
+
+    <h2>Clusters w/ Unsupported Version</h2>
+  {{#if clusters_reached_eos}}
+    <table>
+      <tr>
+        <th>Cluster Name</th>
+        <th>Account ID</th>
+        <th>Region</th>
+        <th>Version</th>
+      </tr>
+    {{#each clusters_reached_eos}}
+      <tr>
+        <td>{{name}}</td>
+        <td>{{account_id}}</td>
+        <td>{{region}}</td>
+        <td>{{version}}</td>
+      </tr>
+    {{/each}}
+    </table>
+  {{else}}
+    <p>No clusters with unsupported versions found.</p>
+  {{/if}}
+    <h2>Clusters w/ Version Nearing End of Support</h2>
+  {{#if clusters_near_eos}}
+    <p>The following clusters will see their version reach end of support within the next {{eos_within_days}}.</p>
+
+    <table>
+      <tr>
+        <th>Cluster Name</th>
+        <th>Account ID</th>
+        <th>Region</th>
+        <th>Version</th>
+        <th>Days Until EOS</th>
+      </tr>
+    {{#each clusters_near_eos}}
+      <tr>
+        <td>{{name}}</td>
+        <td>{{account_id}}</td>
+        <td>{{region}}</td>
+        <td>{{version}}</td>
+        <td>{{days_till_eos}}</td>
+      </tr>
+    {{/each}}
+    </table>
+  {{else}}
+    <p>No clusters found whose version will reach end of support within the next {{eos_within_days}}.</p>
+  {{/if}}
+
+    <hr height="1"
+      style="height:1px; border:0 none; color: black; background-color: black; margin-top:1.5em; margin-bottom:1.5em;">
+
+    <p>This report was generated using the <a href="https://github.com/clowdhaus/terraform-aws-eks-report">terraform-aws-eks-report</a> project.</p>
+  </main>
+</body>
+
+</html>

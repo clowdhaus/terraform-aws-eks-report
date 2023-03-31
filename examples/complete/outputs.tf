@@ -53,3 +53,17 @@ output "notify_lambda_role_arn" {
   description = "The ARN of the IAM role created for the Lambda Function"
   value       = module.eks_report.notify_lambda_role_arn
 }
+
+################################################################################
+# SES Template
+################################################################################
+
+output "ses_template_arn" {
+  description = "The ARN of the SES Template"
+  value       = module.eks_report.ses_template_arn
+}
+
+output "ses_template_id" {
+  description = "The name of the SES template"
+  value       = module.eks_report.ses_template_id
+}

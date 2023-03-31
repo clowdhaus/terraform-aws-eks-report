@@ -51,7 +51,9 @@ Note that this example may create resources which will incur monetary charges on
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_email_address"></a> [email\_address](#input\_email\_address) | Email address to send notifications to. Note - this will need to be verified in SES before it can be used to send emails | `string` | n/a | yes |
 
 ## Outputs
 
@@ -63,6 +65,8 @@ No inputs.
 | <a name="output_list_lambda_role_arn"></a> [list\_lambda\_role\_arn](#output\_list\_lambda\_role\_arn) | The ARN of the IAM role created for the Lambda Function |
 | <a name="output_notify_lambda_function_arn"></a> [notify\_lambda\_function\_arn](#output\_notify\_lambda\_function\_arn) | The ARN of the Lambda Function |
 | <a name="output_notify_lambda_role_arn"></a> [notify\_lambda\_role\_arn](#output\_notify\_lambda\_role\_arn) | The ARN of the IAM role created for the Lambda Function |
+| <a name="output_ses_template_arn"></a> [ses\_template\_arn](#output\_ses\_template\_arn) | The ARN of the SES Template |
+| <a name="output_ses_template_id"></a> [ses\_template\_id](#output\_ses\_template\_id) | The name of the SES template |
 | <a name="output_step_function_arn"></a> [step\_function\_arn](#output\_step\_function\_arn) | The ARN of the Step Function |
 | <a name="output_step_function_role_arn"></a> [step\_function\_role\_arn](#output\_step\_function\_role\_arn) | The ARN of the IAM role created for the Step Function |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

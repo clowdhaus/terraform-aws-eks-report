@@ -14,8 +14,8 @@ module "eks_report" {
 
   event_schedule_expression = "cron(0 10 * * ? *)"
 
-  to_email_addresses = ["bryantbiggs@gmail.com"]
-  from_email_address = "bryantbiggs@gmail.com"
+  to_email_addresses = ["youremail@youraddress.com"]
+  from_email_address = "youremail@youraddress.com"
 
   notify_eos_within_days = 180
 
@@ -66,6 +66,7 @@ Examples codified under the [`examples`](https://github.com/clowdhaus/terraform-
 
 | Name | Type |
 |------|------|
+| [aws_ses_template.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ses_template) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.describe](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.list](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
@@ -77,6 +78,7 @@ Examples codified under the [`examples`](https://github.com/clowdhaus/terraform-
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_create"></a> [create](#input\_create) | Controls if resources should be created (affects nearly all resources) | `bool` | `true` | no |
+| <a name="input_create_ses_template"></a> [create\_ses\_template](#input\_create\_ses\_template) | Controls if the SES Template should be created | `bool` | `true` | no |
 | <a name="input_describe_lambda_description"></a> [describe\_lambda\_description](#input\_describe\_lambda\_description) | The description of the Lambda function to describe EKS clusters | `string` | `null` | no |
 | <a name="input_describe_lambda_environment_variables"></a> [describe\_lambda\_environment\_variables](#input\_describe\_lambda\_environment\_variables) | A map that defines environment variables for the Lambda function to describe EKS clusters | `map(string)` | `{}` | no |
 | <a name="input_describe_lambda_name"></a> [describe\_lambda\_name](#input\_describe\_lambda\_name) | The name of the Lambda function to describe EKS clusters | `string` | `null` | no |
@@ -98,6 +100,9 @@ Examples codified under the [`examples`](https://github.com/clowdhaus/terraform-
 | <a name="input_notify_lambda_description"></a> [notify\_lambda\_description](#input\_notify\_lambda\_description) | The description of the Lambda function that sends the notification | `string` | `null` | no |
 | <a name="input_notify_lambda_environment_variables"></a> [notify\_lambda\_environment\_variables](#input\_notify\_lambda\_environment\_variables) | A map that defines environment variables for the Lambda function that sends the notification | `map(string)` | `{}` | no |
 | <a name="input_notify_lambda_name"></a> [notify\_lambda\_name](#input\_notify\_lambda\_name) | The name of the Lambda function that sends the notification | `string` | `null` | no |
+| <a name="input_ses_template_arn"></a> [ses\_template\_arn](#input\_ses\_template\_arn) | The ARN of an existing SES Template | `string` | `null` | no |
+| <a name="input_ses_template_name"></a> [ses\_template\_name](#input\_ses\_template\_name) | The name of the SES Template | `string` | `"EKS-Report"` | no |
+| <a name="input_ses_template_subject"></a> [ses\_template\_subject](#input\_ses\_template\_subject) | The subject of the SES Template | `string` | `"Amazon EKS Report"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
 | <a name="input_to_email_addresses"></a> [to\_email\_addresses](#input\_to\_email\_addresses) | The email address to send the report to | `list(string)` | `[]` | no |
 
@@ -111,6 +116,8 @@ Examples codified under the [`examples`](https://github.com/clowdhaus/terraform-
 | <a name="output_list_lambda_role_arn"></a> [list\_lambda\_role\_arn](#output\_list\_lambda\_role\_arn) | The ARN of the IAM role created for the Lambda Function |
 | <a name="output_notify_lambda_function_arn"></a> [notify\_lambda\_function\_arn](#output\_notify\_lambda\_function\_arn) | The ARN of the Lambda Function |
 | <a name="output_notify_lambda_role_arn"></a> [notify\_lambda\_role\_arn](#output\_notify\_lambda\_role\_arn) | The ARN of the IAM role created for the Lambda Function |
+| <a name="output_ses_template_arn"></a> [ses\_template\_arn](#output\_ses\_template\_arn) | The ARN of the SES Template |
+| <a name="output_ses_template_id"></a> [ses\_template\_id](#output\_ses\_template\_id) | The name of the SES template |
 | <a name="output_step_function_arn"></a> [step\_function\_arn](#output\_step\_function\_arn) | The ARN of the Step Function |
 | <a name="output_step_function_role_arn"></a> [step\_function\_role\_arn](#output\_step\_function\_role\_arn) | The ARN of the IAM role created for the Step Function |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

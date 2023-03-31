@@ -253,6 +253,8 @@ module "notify_lambda" {
       EOS_WITHIN_DAYS    = var.notify_eos_within_days
       TO_EMAIL_ADDRESSES = join(";", var.to_email_addresses)
       FROM_EMAIL_ADDRESS = var.from_email_address
+      SES_TEMPLATE_NAME  = var.create && var.create_ses_template ? aws_ses_template.this[0].name : var.ses_template_name
+      SES_TEMPLATE_ARN   = var.create && var.create_ses_template ? aws_ses_template.this[0].arn : var.ses_template_arn
     },
     var.notify_lambda_environment_variables
   )
@@ -262,7 +264,7 @@ module "notify_lambda" {
     ses = {
       sid       = "SendEmail"
       effect    = "Allow",
-      actions   = ["ses:SendEmail"],
+      actions   = ["ses:SendTemplatedEmail"],
       resources = ["*"]
     },
   }
@@ -270,4 +272,16 @@ module "notify_lambda" {
   cloudwatch_logs_retention_in_days = var.log_group_retention_in_days
 
   tags = var.tags
+}
+
+################################################################################
+# SES Template
+################################################################################
+
+resource "aws_ses_template" "this" {
+  count = var.create && var.create_ses_template ? 1 : 0
+
+  name    = coalesce(var.ses_template_name, var.name)
+  subject = var.ses_template_subject
+  html    = file("${path.module}/email.html")
 }
